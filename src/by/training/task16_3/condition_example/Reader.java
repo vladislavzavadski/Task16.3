@@ -9,30 +9,30 @@ import java.util.concurrent.locks.Lock;
  * Created by vladislav on 13.07.16.
  */
 public class Reader implements Runnable {
-    private Lock lock;
-    private Condition bufferIsEmpty;
-    private List<String> buffer;
+    private Buffer buffer;
     private volatile boolean isRunning = true;
 
-    public Reader(Lock lock, Condition bufferIsEmpty, List<String> buffer) {
-        this.lock = lock;
-        this.bufferIsEmpty = bufferIsEmpty;
+    public Reader(Buffer buffer) {
         this.buffer = buffer;
     }
 
     @Override
     public void run() {
         while (isRunning) {
+            Lock lock = null;
             try {
+                lock = buffer.getLock();
                 lock.lock(); //заходим в критическую секцию
                 if (buffer.isEmpty()) {//если буффер пуст
+                    Condition condition = buffer.getCondition();
                     System.out.println("Буффер оказался пуст, ждём пока писатель не отправит сообщение...");
-                    bufferIsEmpty.await();//позволяем потоку-писателю войти в критическую секцию, при этом
+                    condition.await();//позволяем потоку-писателю войти в критическую секцию, при этом
                     // поток-читатель ждет, пока писатель не положит что-нибудь в буффер.
 
                 }
+                List<String> messages = buffer.getMessages();
                 System.out.println("Читатель получил сообщение:");
-                Iterator<String> iterator = buffer.iterator();
+                Iterator<String> iterator = messages.iterator();
 
                 while (iterator.hasNext()) {
                     System.out.println(iterator.next());//извлекаем все сообщения из буффера

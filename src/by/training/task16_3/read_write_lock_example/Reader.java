@@ -8,12 +8,11 @@ import java.util.concurrent.locks.ReadWriteLock;
  * Created by vladislav on 13.07.16.
  */
 public class Reader implements Runnable {
-    private ReadWriteLock readWriteLock;
-    private List<String> buffer;
+
+    private Buffer buffer;
     private volatile boolean isRunning = true;
 
-    public Reader(ReadWriteLock readWriteLock, List<String> buffer) {
-        this.readWriteLock = readWriteLock;
+    public Reader(Buffer buffer) {
         this.buffer = buffer;
     }
 
@@ -22,14 +21,16 @@ public class Reader implements Runnable {
         while (isRunning){
             try {
                 Thread.sleep(200);
-                readWriteLock.readLock().lock();//берем блокировку (в качестве читателя) и входим в КС
+                ReadWriteLock readWriteLock = buffer.getLock();//берем блокировку буффера
+                readWriteLock.readLock().lock();//блокируем буффер и входим в КС
                 System.out.println("Читатель начинает читать сообщения: ");
-                Iterator<String> iterator = buffer.iterator();
+                List<String> messages = buffer.getMessages();
+                Iterator<String> iterator = messages.iterator();
                 while (iterator.hasNext()){
                     System.out.println(iterator.next()); //извлекаем
                     iterator.remove(); // и удаляем из буффера все сообщения, которые накопились со времени последнего чтения
                 }
-                readWriteLock.readLock().unlock();//отдаем блокировку и выходим из КС, тем самым позволяя писателям писать в буфер
+                readWriteLock.readLock().unlock();//разблокируем буффер и выходим из КС, тем самым позволяя писателям писать в буфер
                 System.out.println("Читатель закончил чтение. ");
             } catch (InterruptedException e) {
                 e.printStackTrace();

@@ -1,10 +1,5 @@
 package by.training.task16_3.condition_example;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by vladislav on 13.07.16.
@@ -14,12 +9,10 @@ import java.util.concurrent.locks.ReentrantLock;
 * Здесь разделяемым ресурсом является общий буффер.*/
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        Lock lock = new ReentrantLock();
-        Condition condition = lock.newCondition();
-        List<String> buffer = new ArrayList<>();
+        Buffer buffer = new Buffer();
 
-        Writer writer = new Writer(lock, condition, buffer);
-        Reader reader = new Reader(lock, condition, buffer);
+        Writer writer = new Writer(buffer);
+        Reader reader = new Reader(buffer);
 
         new Thread(writer).start();
         new Thread(reader).start();
@@ -27,6 +20,8 @@ public class Main {
         Thread.sleep(20000);
 
         reader.stop();
+        Thread.sleep(1000);//ожидаем 1 секунду, на случай, если в момент остановки читатель находится в ожидании сообщения от писателя,
+        //чтоб за эту секунду писатель успел что-нибудь отправить
         writer.stop();
 
     }
